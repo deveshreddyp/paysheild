@@ -81,6 +81,123 @@ docker-compose up -d --build
 
 ---
 
+## 📁 Project File Structure
+
+```
+payshield/
+│
+├── 📂 dashboard/                    # Next.js Frontend Dashboard (React + WebSocket)
+│   ├── app/
+│   │   ├── components/              # React UI Components
+│   │   │   ├── AIModelStatus.tsx     # AI model performance display
+│   │   │   ├── HeatmapClient.tsx     # Geographic heatmap visualization
+│   │   │   ├── LatencyChart.tsx      # Real-time latency metrics
+│   │   │   ├── ReplayEngine.tsx      # Transaction lifecycle analyzer
+│   │   │   ├── RequestlyDemoButton.tsx # Requestly attack simulator
+│   │   │   ├── RiskPipeline.tsx      # Risk scoring pipeline viz
+│   │   │   ├── SeedDataButton.tsx    # Demo data seeder
+│   │   │   ├── StatsPanel.tsx        # Key metrics panel
+│   │   │   ├── TamperAlert.tsx       # Tampering alerts
+│   │   │   ├── TrackingStatus.tsx    # Request tracking status
+│   │   │   └── Waterfall.tsx         # Request waterfall diagram
+│   │   ├── hooks/                   # Custom React Hooks
+│   │   │   ├── useLatencyStats.ts    # Latency statistics hook
+│   │   │   └── useWebSocket.ts       # WebSocket connection hook
+│   │   ├── types/                   # TypeScript Type Definitions
+│   │   │   └── transaction.ts        # Transaction type schemas
+│   │   ├── layout.tsx               # Root layout component
+│   │   ├── page.tsx                 # Main dashboard page
+│   │   └── globals.css              # Global styles
+│   ├── public/                      # Static assets
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.ts
+│   ├── postcss.config.js
+│   ├── Dockerfile
+│   └── next.config.mjs
+│
+├── 📂 gateway/                      # Node.js Express API Gateway (Edge Layer)
+│   ├── src/
+│   │   ├── middleware/              # Express middleware stack
+│   │   │   ├── auth.js              # JWT authentication
+│   │   │   ├── errorHandler.js      # Centralized error handling
+│   │   │   ├── idempotency.js       # Idempotency key management
+│   │   │   ├── notFound.js          # 404 handler
+│   │   │   ├── rateLimit.js         # Rate limiting
+│   │   │   └── security.js          # Security headers & XSS protection
+│   │   ├── routes/                  # API endpoint routes
+│   │   │   ├── auth.js              # Authentication routes
+│   │   │   └── payment.js           # Payment processing routes
+│   │   ├── services/                # Business logic services
+│   │   │   ├── fraudClient.js       # Fraud engine integration
+│   │   │   ├── keyRotation.js       # Cryptographic key rotation
+│   │   │   └── redisClient.js       # Redis cache/pub-sub client
+│   │   ├── ws/                      # WebSocket handlers
+│   │   │   └── broadcaster.js       # Real-time event broadcaster
+│   │   ├── scripts/
+│   │   │   └── seedDemo.js          # Demo data seeding script
+│   │   ├── config.js                # Configuration management
+│   │   ├── index.js                 # Server entry point
+│   │   └── swagger.js               # OpenAPI/Swagger docs
+│   ├── package.json
+│   ├── Dockerfile
+│   └── .gitignore
+│
+├── 📂 fraud/                        # Python FastAPI Fraud Detection Engine (ML Brain)
+│   ├── src/
+│   │   ├── features/                # Feature engineering
+│   │   │   └── extractor.py         # Transaction feature extraction
+│   │   ├── model/                   # Machine Learning Models
+│   │   │   ├── isolation.py         # Isolation forest anomaly detection
+│   │   │   ├── online.py            # Online learning pipeline
+│   │   │   └── rules.py             # Rule-based fraud detection
+│   │   ├── dependencies.py          # FastAPI dependency injection
+│   │   ├── main.py                  # FastAPI application entry
+│   │   ├── middleware.py            # Request/response middleware
+│   │   ├── router.py                # API route definitions
+│   │   └── schemas.py               # Pydantic request/response schemas
+│   ├── requirements.txt             # Python dependencies
+│   ├── Dockerfile
+│   └── .gitignore
+│
+├── 📂 k8s-manifests/                # Kubernetes Deployment
+│   └── payshield-stack.yaml         # Complete K8s stack manifest
+│
+├── 📂 payshield-demo/               # HTML Interactive Demo
+│   └── index.html                   # Browser-based attack simulator
+│
+├── 📂 postman/                      # API Testing Collection
+│   └── collection.json              # Postman API endpoints
+│
+├── 📂 requestly/                    # Requestly Browser Extension Rules
+│   └── rules.json                   # Request tampering rules config
+│
+├── 📂 test/                         # Integration Tests
+│   └── integration.sh               # End-to-end test suite
+│
+├── 🐳 docker-compose.yml            # Docker Compose orchestration
+├── 📋 render.yaml                   # Render.com deployment config
+├── README.md                        # This file
+└── 📚 Documentation Files
+    ├── cmd.md                       # Command reference
+    ├── doc.md                       # Detailed documentation
+    ├── guide.md                     # User guide
+    ├── full_deployment_guide.md     # Deployment instructions
+    ├── k8s_deployment_guide.md      # Kubernetes guide
+    ├── railway_deployment_guide.md  # Railway.app guide
+    ├── info.md                      # Project information
+    ├── process.md                   # Development process
+    └── [other documentation]
+```
+
+### File Structure Legend
+* 📂 **Directories** - Logical service boundaries
+* 🐳 **Docker Files** - containerization configs
+* 📋 **Config Files** - deployment and build configuration
+* 📚 **Documentation** - guides and references
+
+---
+
 ## 🎯 How to Test the Live Attack (For Judges)
 
 We highly recommend testing the Requestly integration yourself.
@@ -117,10 +234,10 @@ node src/scripts/seedDemo.js
 ## Team Orbit
 - M Tanusree Reddy 
 - Nihal DR
-- P Devesh Reddy
+- Pusalapati Devesh Reddy
 
 
 <div align="center">
-  <b>Built with ❤️ by Team PayShield for Hack-Nocturne 2.O</b><br>
+  <b>Built with ❤️ by Team ORBIT for Hack-Nocturne 2.O</b><br>
   <i>Stop trusting the client. Start proving it.</i>
 </div>
