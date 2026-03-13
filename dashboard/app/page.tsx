@@ -13,6 +13,7 @@ import { TrackingStatus } from './components/TrackingStatus';
 import { RiskPipeline } from './components/RiskPipeline';
 import { AIModelStatus, EngineHealth } from './components/AIModelStatus';
 import { RequestlyDemoButton } from './components/RequestlyDemoButton';
+import { SeedDataButton } from './components/SeedDataButton';
 import { Shield, Wifi, WifiOff, Sun, Moon, Bell, User, Activity } from 'lucide-react';
 
 const Heatmap = dynamic(() => import('./components/HeatmapClient'), {
@@ -78,6 +79,7 @@ export default function Dashboard() {
 
                     {/* Right: Controls */}
                     <div className="flex items-center gap-3">
+                        <SeedDataButton />
                         <RequestlyDemoButton />
                         <span className="badge-production badge">Production Cluster</span>
 
