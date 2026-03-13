@@ -9,10 +9,18 @@ const { exec } = require('child_process');
 // Trigger Seed Script from the Dashboard Button
 router.post('/seed', (req, res, next) => {
     try {
+        const path = require('path');
+        const scriptPath = path.join(__dirname, '../scripts/seedDemo.js');
+        const gatewayPort = process.env.PORT || 3000;
+        
+        // Ensure the script hits the container's internal localhost
+        const env = { ...process.env, GATEWAY_URL: `http://127.0.0.1:${gatewayPort}` };
+
         // Run the script in the background
-        exec('node src/scripts/seedDemo.js', (error, stdout, stderr) => {
+        exec(`node ${scriptPath}`, { env }, (error, stdout, stderr) => {
             if (error) {
                 console.error(`[Seed Route] execution error: ${error}`);
+                console.error(`[Seed Route] stderr: ${stderr}`);
                 return;
             }
             console.log(`[Seed Route] stdout: ${stdout}`);
