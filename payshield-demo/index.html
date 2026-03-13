@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayShield — Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #060a14;
+            --surface: #0a0e1a;
+            --surface-hover: #111827;
+            --surface-border: rgba(99, 102, 241, 0.15);
+            --surface-border-light: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --cyan: #06b6d4;
+            --success: #10b981;
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --danger: #ef4444;
+            --danger-bg: rgba(239, 68, 68, 0.1);
+            --warning: #f59e0b;
+            --warning-bg: rgba(245, 158, 11, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Typography */
+        h1, h2, h3, h4 { font-weight: 700; letter-spacing: -0.5px; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Threat Banner */
+        .threat-banner { background: var(--danger-bg); border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding: 10px 24px; display: none; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600; color: #fca5a5; z-index: 50; }
+        .threat-banner.active { display: flex; animation: slideDown 0.3s ease-out; }
+        .threat-banner-content { display: flex; align-items: center; gap: 8px; }
+        .pulsive-dot { width: 8px; height: 8px; background: var(--danger); border-radius: 50%; box-shadow: 0 0 10px var(--danger); animation: pulse 1.5s infinite; }
+
+        /* Top Navbar */
+        .navbar { height: 64px; border-bottom: 1px solid var(--surface-border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; flex-shrink: 0; z-index: 40; }
+        .logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; }
+        .logo i { color: var(--primary); }
+        
+        .nav-center { display: flex; gap: 8px; }
+        .nav-tab { padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .nav-tab:hover { background: var(--surface-hover); color: var(--text-main); }
+        .nav-tab.active { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+
+        .nav-actions { display: flex; align-items: center; gap: 16px; }
+        
+        /* Requestly Controls */
+        .rq-panel { display: flex; align-items: center; gap: 16px; background: rgba(0,0,0,0.3); padding: 6px 6px 6px 16px; border-radius: 8px; border: 1px solid var(--surface-border); }
+        .rq-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .rq-toggle { width: 36px; height: 20px; background: #334155; border-radius: 10px; position: relative; cursor: pointer; transition: 0.3s; }
+        .rq-toggle.on { background: var(--danger); }
+        .rq-toggle .knob { width: 14px; height: 14px; background: white; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: 0.3s; }
+        .rq-toggle.on .knob { left: 19px; }
+        
+        .action-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .btn-green { background: var(--success-bg); color: var(--success); border-color: rgba(16, 185, 129, 0.3); }
+        .btn-green:hover { background: rgba(16, 185, 129, 0.2); }
+        .btn-red { background: var(--danger); color: white; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4); }
+        .btn-red:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5); }
+        .btn-red:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Main Container */
+        .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+        
+        /* Views */
+        .view-content { flex: 1; overflow-y: auto; padding: 32px; display: none; flex-direction: column; gap: 24px; animation: fadeIn 0.3s; }
+        .view-content.active { display: flex; }
+
+        /* Dashboard Overview View */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .stat-card-header { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card-val { font-size: 28px; font-weight: 800; font-family: 'JetBrains Mono'; }
+        
+        .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; height: 300px; }
+        .panel { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; }
+        .panel-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        
+        /* Fake Chart CSS */
+        .bar-chart { flex: 1; display: flex; align-items: flex-end; gap: 8px; padding-top: 20px; }
+        .bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; height: 100%; }
+        .bar-segment { width: 100%; border-radius: 4px; }
+        .bar-segment.green { background: var(--success); }
+        .bar-segment.red { background: var(--danger); box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+        .bar-label { font-size: 10px; color: var(--text-muted); text-align: center; margin-top: 4px; }
+
+        /* Threat Feed */
+        .threat-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+        .threat-item { background: var(--danger-bg); border: 1px solid rgba(239, 68, 68, 0.2); padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .threat-item-left { display: flex; flex-direction: column; gap: 4px; }
+        .th-title { font-size: 13px; font-weight: 700; color: #fca5a5; display: flex; align-items: center; gap: 6px; }
+        .th-meta { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono'; }
+        .th-btn { background: rgba(0,0,0,0.3); border: 1px solid var(--surface-border); color: var(--text-main); font-size: 11px; padding: 4px 10px; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .th-btn:hover { background: rgba(99, 102, 241, 0.2); border-color: var(--primary); }
+
+        /* Transaction Stream View */
+        .table-container { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; flex: 1; }
+        .table-header { display: grid; grid-template-columns: 100px 1.5fr 1fr 1fr 100px; padding: 16px 24px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--surface-border); font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .table-row { display: grid; grid-template-columns: 100px 1.5fr 1fr 1fr 100px; padding: 16px 24px; border-bottom: 1px solid var(--surface-border); align-items: center; font-size: 13px; transition: 0.2s; }
+        .table-row:hover { background: var(--surface-hover); }
+        .badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .badge.success { background: var(--success-bg); color: var(--success); }
+        .badge.danger { background: var(--danger-bg); color: var(--danger); box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); }
+        .badge.warning { background: var(--warning-bg); color: var(--warning); }
+        .table-row .id { font-family: 'JetBrains Mono'; color: var(--text-muted); cursor: pointer; transition: 0.2s; }
+        .table-row .id:hover { color: var(--primary); text-decoration: underline; }
+
+        /* Replay Engine View */
+        .replay-container { display: flex; gap: 24px; height: 100%; }
+        .replay-sidebar { width: 320px; background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .rs-header { padding: 16px; border-bottom: 1px solid var(--surface-border); font-size: 13px; font-weight: 700; background: rgba(0,0,0,0.2); }
+        .rs-list { flex: 1; overflow-y: auto; }
+        .rs-item { padding: 16px; border-bottom: 1px solid var(--surface-border); cursor: pointer; transition: 0.2s; }
+        .rs-item:hover { background: var(--surface-hover); }
+        .rs-item.active { background: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--primary); }
+        
+        .replay-main { flex: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; padding-right: 8px; }
+        .step-card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; overflow: hidden; opacity: 0.5; transition: 0.3s; transform: translateY(10px); }
+        .step-card.active { opacity: 1; transform: translateY(0); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .step-card.active.tampered { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15); }
+        .s-head { padding: 12px 20px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--surface-border); font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+        .s-body { padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6; }
+        
+        /* Code Formatting */
+        .c-key { color: var(--cyan); }
+        .c-str { color: #a5b4fc; }
+        .c-num { color: #fcd34d; }
+        .c-bool { color: #f472b6; }
+        .c-hl { background: var(--danger-bg); color: #fca5a5; padding: 2px 6px; border-radius: 4px; font-weight: 700; animation: pulse-bg 2s infinite; display: inline-block; }
+        
+        /* Requestly Rules View */
+        .rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .rule-card { background: var(--surface); border: 1px solid var(--surface-border); border-radius: 12px; overflow: hidden; }
+        .rc-head { padding: 16px 20px; border-bottom: 1px solid var(--surface-border); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); }
+        .rc-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+        .rc-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+        .rule-row { display: flex; flex-direction: column; gap: 6px; }
+        .r-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+        .r-val { font-family: 'JetBrains Mono'; font-size: 13px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; border: 1px solid var(--surface-border); }
+        .r-val.highlight { border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
+
+        /* Toasts */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 12px; z-index: 100; }
+        .toast { background: var(--surface); border: 1px solid var(--surface-border); padding: 16px 20px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); display: flex; gap: 16px; min-width: 320px; animation: slideInX 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .toast.closing { animation: slideOutX 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .t-icon { padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; height: fit-content; }
+        .toast.success .t-icon { background: var(--success-bg); color: var(--success); }
+        .toast.danger .t-icon { background: var(--danger-bg); color: var(--danger); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        @keyframes pulse-bg { 0% { background: rgba(239, 68, 68, 0.1); } 50% { background: rgba(239, 68, 68, 0.2); } 100% { background: rgba(239, 68, 68, 0.1); } }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+        @keyframes slideInX { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutX { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        .empty-replay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: var(--text-muted); background: var(--bg); z-index: 10; }
+        
+        /* Map Nodes */
+        .map-node { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); opacity: 0; }
+        .map-node.success { background: var(--success); box-shadow: 0 0 10px var(--success); animation: nodeFlash 3s ease-out forwards; }
+        .map-node.danger { background: var(--danger); box-shadow: 0 0 15px var(--danger); animation: nodeFlashDanger 4s ease-out forwards; z-index: 5; }
+        
+        @keyframes nodeFlash { 0% { opacity: 1; transform: translate(-50%, -50%) scale(2); } 20% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0.1; } }
+        @keyframes nodeFlashDanger { 0% { opacity: 1; transform: translate(-50%, -50%) scale(3); box-shadow: 0 0 30px var(--danger); } 10% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.5); } 100% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <!-- Threat Banner -->
+    <div class="threat-banner" id="threatBanner">
+        <div class="threat-banner-content">
+            <div class="pulsive-dot"></div>
+            <span>CRITICAL ALERT: Tampered transaction intercepted at the Edge Gateway. Replay Engine ready.</span>
+        </div>
+        <button style="background:none;border:none;color:inherit;cursor:pointer;font-weight:700;" onclick="this.parentElement.classList.remove('active')">×</button>
+    </div>
+
+    <!-- Top Navbar -->
+    <header class="navbar">
+        <div class="logo">
+            <i data-lucide="shield-check"></i> PayShield
+        </div>
+        
+        <div class="nav-center">
+            <div class="nav-tab active" onclick="switchTab('overview', this)"><i data-lucide="layout-dashboard" style="width:16px;"></i> Overview</div>
+            <div class="nav-tab" onclick="switchTab('stream', this)"><i data-lucide="activity" style="width:16px;"></i> Live Stream</div>
+            <div class="nav-tab" onclick="switchTab('replay', this)"><i data-lucide="play-square" style="width:16px;"></i> Replay Engine</div>
+            <div class="nav-tab" onclick="switchTab('rules', this)"><i data-lucide="wrench" style="width:16px;"></i> Requestly config</div>
+        </div>
+
+        <div class="nav-actions">
+            <div class="rq-panel">
+                <div class="rq-label">Requestly Extension</div>
+                <div class="rq-toggle on" id="rqToggle" onclick="toggleRQ()">
+                    <div class="knob"></div>
+                </div>
+                <span id="rqStatus" style="font-size: 11px; font-weight: 700; color: #fca5a5; width: 24px; margin-right: 8px;">ON</span>
+                
+                <button class="action-btn btn-red" id="simBtn" onclick="runAttack()">
+                    <i data-lucide="zap" style="width:16px;"></i> TEST TAMPER
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="main">
+        
+        <!-- ==================== OVERVIEW TAB ==================== -->
+        <div class="view-content active" id="view-overview">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header"><i data-lucide="activity"></i> Total Transactions</div>
+                    <div class="stat-card-val" id="st-total">1,248</div>
+                    <div style="color:var(--success); font-size:12px; font-weight:600;">+12% today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header"><i data-lucide="shield"></i> Clean (200 OK)</div>
+                    <div class="stat-card-val" id="st-clean" style="color:var(--success)">1,234</div>
+                    <div style="color:var(--text-muted); font-size:12px;">98.8% approval rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header"><i data-lucide="shield-alert" style="color:var(--danger)"></i> Tamper Blocked</div>
+                    <div class="stat-card-val" id="st-fraud" style="color:var(--danger)">14</div>
+                    <div style="color:var(--danger); font-size:12px; font-weight:600;">Active threats</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header"><i data-lucide="zap"></i> Avg Latency</div>
+                    <div class="stat-card-val">48<span style="font-size:16px;color:var(--text-muted)">ms</span></div>
+                    <div style="color:var(--success); font-size:12px;">Edge + ML Inference</div>
+                </div>
+            </div>
+
+            <div class="charts-row" style="grid-template-columns: 1fr 1.5fr 1fr; height: 320px;">
+                <div class="panel">
+                    <div class="panel-title"><i data-lucide="bar-chart-2"></i> Transaction Volume</div>
+                    <div class="bar-chart" id="volChart">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                <div class="panel map-panel" style="position: relative; overflow: hidden; justify-content: flex-start;">
+                    <div class="panel-title" style="margin-bottom: 0; z-index: 2;"><i data-lucide="globe"></i> Live Geo-Tracking</div>
+                    <div class="map-bg" id="geoMap" style="position: absolute; inset: 0; background-image: radial-gradient(circle at center, rgba(99, 102, 241, 0.2) 1px, transparent 1px); background-size: 15px 15px; top: 40px; margin: 10px; border: 1px solid var(--surface-border); border-radius: 8px;">
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0.1; font-size: 150px; font-weight: 900; color: white;"><i data-lucide="map" style="width:200px; height:200px;"></i></div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-title" style="color:var(--danger)"><i data-lucide="alert-triangle"></i> Recent Threats</div>
+                    <div class="threat-list" id="overviewThreats">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TRANSACTION STREAM TAB ==================== -->
+        <div class="view-content" id="view-stream" style="padding: 0;">
+            <div class="table-container" style="border:none; border-radius:0;">
+                <div class="table-header">
+                    <div>Status</div>
+                    <div>Transaction ID</div>
+                    <div>Amount</div>
+                    <div>ML Score</div>
+                    <div style="text-align:right">Time</div>
+                </div>
+                <div class="table-body" id="txTable">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== REPLAY ENGINE TAB ==================== -->
+        <div class="view-content" id="view-replay" style="flex-direction: row; padding: 24px;">
+            <div class="replay-sidebar">
+                <div class="rs-header">Recent Transactions</div>
+                <div class="rs-list" id="rsList">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <div class="replay-main" style="position: relative;">
+                <div class="empty-replay" id="emptyReplay">
+                    <i data-lucide="mouse-pointer-click" style="width:48px;height:48px;color:var(--primary)"></i>
+                    <h2>Select a transaction to replay</h2>
+                    <p>Or click 'TEST TAMPER' in the navbar to simulate a live attack.</p>
+                </div>
+
+                <div id="replayContent" style="display: none; flex-direction: column; gap: 20px;">
+                    <h2 id="replayTitle" style="font-family:'JetBrains Mono'; font-size: 16px; border-bottom:1px solid var(--surface-border); padding-bottom: 16px;"></h2>
+                    
+                    <div class="step-card" id="s1">
+                        <div class="s-head"><span>1</span> Browser Request </div>
+                        <div class="s-body" id="sb1"></div>
+                    </div>
+                    <div class="step-card" id="s2">
+                        <div class="s-head"><span>2</span> Edge Gateway Middleware</div>
+                        <div class="s-body" id="sb2"></div>
+                    </div>
+                    <div class="step-card" id="s3">
+                        <div class="s-head"><span>3</span> AI Fraud Engine (XGBoost)</div>
+                        <div class="s-body" id="sb3"></div>
+                    </div>
+                    <div class="step-card" id="s4">
+                        <div class="s-head"><span>4</span> Final Decision</div>
+                        <div class="s-body" id="sb4"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== REQUESTLY RULES TAB ==================== -->
+        <div class="view-content" id="view-rules">
+            <h2 style="display:flex;align-items:center;gap:12px;margin-bottom:8px;"><i data-lucide="wrench"></i> Live Attack Simulation Rules</h2>
+            <p style="color:var(--text-muted); max-width: 800px; margin-bottom: 24px; line-height: 1.6;">
+                This tab shows the active rules configured in the **Requestly Browser Extension**. 
+                In a real attack, these rules run transparently in the browser intercepting the network request mid-flight. 
+                PayShield's Edge Gateway is designed to catch the modifications made by rules exactly like these.
+            </p>
+
+            <div class="rules-grid">
+                <div class="rule-card">
+                    <div class="rc-head">
+                        <div class="rc-title" style="color:var(--cyan)"><i data-lucide="file-code"></i> Modify Headers Rule</div>
+                        <div class="badge success">ACTIVE</div>
+                    </div>
+                    <div class="rc-body">
+                        <div class="rule-row"><span class="r-label">Target URL contains</span><div class="r-val">/api/v1/payment/initiate</div></div>
+                        <div class="rule-row">
+                            <span class="r-label">Action: Add/Modify Request Header</span>
+                            <div class="r-val highlight">
+                                <span class="c-key">Key:</span> X-Requestly-Modified<br>
+                                <span class="c-key">Value:</span> true
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                            <i>This rule simulates an attacker injecting custom headers (like proxy markers or spoofed origins). PayShield's middleware scans for expected schemas and known tampering tags.</i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rule-card">
+                    <div class="rc-head">
+                        <div class="rc-title" style="color:var(--warning)"><i data-lucide="file-json"></i> Modify API Response (Bypass Attempt)</div>
+                        <div class="badge" style="background:rgba(255,255,255,0.1);color:var(--text-muted)">INACTIVE for Demo</div>
+                    </div>
+                    <div class="rc-body">
+                        <div class="rule-row"><span class="r-label">Target URL contains</span><div class="r-val">/api/v1/fraud/score</div></div>
+                        <div class="rule-row">
+                            <span class="r-label">Action: Override Response Body</span>
+                            <div class="r-val">
+                                {<br>
+                                &nbsp;&nbsp;"risk_score": 0.1,<br>
+                                &nbsp;&nbsp;"label": "LOW"<br>
+                                }
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+                            <i>PayShield defeats this attack vector because the Fraud Engine communicates with the Gateway via internal Docker network (Server-to-Server), meaning the client browser extension cannot intercept the ML response.</i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toasts -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Init UI
+        lucide.createIcons();
+        let rqOn = true;
+        let isRunning = false;
+        
+        // App State
+        let stats = { total: 1248, clean: 1234, fraud: 14 };
+        let txns = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            generateFakeChart();
+            seedHistory();
+            renderAll();
+            
+            // Background traffic for map
+            setInterval(() => {
+                if(!isRunning && Math.random() > 0.5) {
+                    addMapNode(false);
+                    stats.total++;
+                    stats.clean++;
+                    $('st-total').textContent = stats.total.toLocaleString();
+                    $('st-clean').textContent = stats.clean.toLocaleString();
+                }
+            }, 2000);
+        });
+
+        // ============ UTILS ============
+        const $ = id => document.getElementById(id);
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        const formatMoney = n => '₹' + n.toLocaleString('en-IN', {minimumFractionDigits:2});
+
+        // ============ NAVIGATION ============
+        function switchTab(tabId, el) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+            el.classList.add('active');
+            $(`view-${tabId}`).classList.add('active');
+        }
+
+        function toggleRQ() {
+            if (isRunning) return;
+            rqOn = !rqOn;
+            $('rqToggle').className = `rq-toggle ${rqOn ? 'on' : ''}`;
+            $('rqStatus').textContent = rqOn ? 'ON' : 'OFF';
+            $('rqStatus').style.color = rqOn ? '#fca5a5' : 'var(--text-muted)';
+            
+            const btn = $('simBtn');
+            if(rqOn) {
+                btn.className = 'action-btn btn-red';
+                btn.innerHTML = '<i data-lucide="zap" style="width:16px;"></i> TEST TAMPER';
+            } else {
+                btn.className = 'action-btn btn-green';
+                btn.innerHTML = '<i data-lucide="check-circle" style="width:16px;"></i> SEND CLEAN';
+            }
+            lucide.createIcons();
+        }
+
+        function toast(pass, txId, score) {
+            const container = $('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${pass ? 'success' : 'danger'}`;
+            t.innerHTML = `
+                <div class="t-icon"><i data-lucide="${pass ? 'check' : 'alert-triangle'}"></i></div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                    <b style="color:white;font-size:14px;">${pass?'Payment Approved':'🚨 Tamper Detected!'}</b>
+                    <span style="font-family:'JetBrains Mono';font-size:12px;color:var(--text-muted)">${txId}</span>
+                    <span style="font-size:13px;color:var(--text-muted)">${pass?'200 OK (Clean)':'402 FRAUD_FLAGGED (Tamper Caught)'} - ML: ${score}</span>
+                </div>
+            `;
+            container.appendChild(t);
+            lucide.createIcons();
+            setTimeout(() => { t.classList.add('closing'); setTimeout(() => t.remove(), 300); }, 5000);
+        }
+
+        // ============ RENDERING ============
+        function generateFakeChart() {
+            const chart = $('volChart');
+            let html = '';
+            for(let i=0; i<24; i++) {
+                const height = 20 + Math.random() * 60;
+                const isRed = Math.random() > 0.85;
+                html += `
+                    <div class="bar-col">
+                        <div class="bar-segment ${isRed ? 'red' : 'green'}" style="height:${height}%"></div>
+                        <div class="bar-label">${i}h</div>
+                    </div>
+                `;
+            }
+            chart.innerHTML = html;
+        }
+
+        function seedHistory() {
+            for(let i=0; i<15; i++) {
+                const isTampered = Math.random() > 0.85;
+                txns.push({
+                    id: 'txn-' + crypto.randomUUID(),
+                    amt: Math.floor(Math.random() * 8000) + 100,
+                    score: isTampered ? (0.65+Math.random()*0.1).toFixed(3) : (0.1+Math.random()*0.3).toFixed(3),
+                    isTampered,
+                    time: new Date(Date.now() - Math.random()*10000000).toLocaleTimeString()
+                });
+            }
+            txns.sort((a,b) => b.time.localeCompare(a.time)); // desc
+        }
+
+        function renderAll() {
+            // Stats
+            $('st-total').textContent = stats.total.toLocaleString();
+            $('st-clean').textContent = stats.clean.toLocaleString();
+            $('st-fraud').textContent = stats.fraud.toLocaleString();
+
+            // Table Stream
+            $('txTable').innerHTML = txns.map(t => `
+                <div class="table-row">
+                    <div><span class="badge ${t.isTampered ? 'danger' : 'success'}">${t.isTampered ? '402 BLOCK' : '200 OK'}</span></div>
+                    <div class="id" onclick="openReplay('${t.id}')">${t.id}</div>
+                    <div class="mono" style="font-weight:700; color:${t.isTampered?'var(--danger)':'var(--success)'}">${formatMoney(t.amt)}</div>
+                    <div class="mono">${t.score}</div>
+                    <div style="text-align:right; color:var(--text-muted)">${t.time}</div>
+                </div>
+            `).join('');
+
+            // Replay Sidebar
+            $('rsList').innerHTML = txns.slice(0, 10).map(t => `
+                <div class="rs-item" id="rs-${t.id}" onclick="openReplay('${t.id}')">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                        <span class="mono" style="font-size:12px;font-weight:600">${t.id.slice(0,13)}..</span>
+                        <span class="badge ${t.isTampered ? 'danger' : 'success'}" style="font-size:9px">${t.isTampered ? '402' : '200'}</span>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted)">${t.time} • ₹${t.amt}</div>
+                </div>
+            `).join('');
+
+            // Overview Threats
+            const badTxns = txns.filter(t => t.isTampered).slice(0,4);
+            $('overviewThreats').innerHTML = badTxns.map(t => `
+                <div class="threat-item">
+                    <div class="threat-item-left">
+                        <div class="th-title"><i data-lucide="alert-circle" style="width:14px;"></i> Tamper Triggered</div>
+                        <div class="th-meta">${t.id} • ${t.time}</div>
+                    </div>
+                    <button class="th-btn" onclick="openReplay('${t.id}')">View Trace</button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // ============ SIMULATION & REPLAY ============
+        async function runAttack() {
+            if(isRunning) return;
+            isRunning = true;
+            $('simBtn').disabled = true;
+            
+            // Generate new
+            const tx = {
+                id: 'txn-' + crypto.randomUUID(),
+                amt: 25000,
+                score: rqOn ? (0.65+Math.random()*0.1).toFixed(3) : (0.2+Math.random()*0.3).toFixed(3),
+                isTampered: rqOn,
+                time: new Date().toLocaleTimeString()
+            };
+            
+            // Update Data
+            txns.unshift(tx);
+            stats.total++;
+            if(rqOn) stats.fraud++; else stats.clean++;
+            
+            renderAll();
+            
+            // Switch to Replay & Auto-Run
+            document.querySelectorAll('.nav-tab')[2].click();
+            await runReplayAnimation(tx);
+            
+            if(rqOn) $('threatBanner').classList.add('active');
+            toast(!rqOn, tx.id, tx.score);
+            addMapNode(rqOn);
+            
+            $('simBtn').disabled = false;
+            isRunning = false;
+        }
+
+        function addMapNode(isTampered) {
+            const map = $('geoMap');
+            if(!map) return;
+            const node = document.createElement('div');
+            node.className = `map-node ${isTampered ? 'danger' : 'success'}`;
+            
+            // Random position favoring the center
+            const top = 20 + Math.random() * 60;
+            const left = 10 + Math.random() * 80;
+            node.style.top = top + '%';
+            node.style.left = left + '%';
+            
+            map.appendChild(node);
+            setTimeout(() => { if(node.parentNode) node.remove(); }, 4000);
+        }
+
+        function openReplay(txId) {
+            const tx = txns.find(t => t.id === txId);
+            if(!tx) return;
+            document.querySelectorAll('.nav-tab')[2].click();
+            
+            // Remove active from all sidebar items
+            document.querySelectorAll('.rs-item').forEach(el => el.classList.remove('active'));
+            const sideItem = $(`rs-${txId}`);
+            if(sideItem) sideItem.classList.add('active');
+
+            runReplayAnimation(tx, true); // true = skip animation wait times
+        }
+
+        async function runReplayAnimation(tx, instant = false) {
+            $('emptyReplay').style.display = 'none';
+            $('replayContent').style.display = 'flex';
+            $('replayTitle').innerHTML = `Trace ID: <span style="color:var(--primary)">${tx.id}</span> • Amount: ₹${tx.amt} • Score: ${tx.score}`;
+
+            // Reset UI
+            for(let i=1;i<=4;i++){ $(`s${i}`).className='step-card'; $(`sb${i}`).innerHTML=''; }
+
+            const delay = instant ? 0 : 500;
+
+            // Step 1
+            $(`s1`).classList.add('active');
+            if(tx.isTampered) $(`s1`).classList.add('tampered');
+            let h1 = `<div><span style="color:var(--text-muted)">POST /api/v1/payment/initiate</span></div><br>`;
+            h1 += `<div><span class="c-key">Headers:</span></div>`;
+            h1 += `<div style="padding-left:16px;">Authorization: <span class="c-str">"Bearer eyJhbG..."</span></div>`;
+            if(tx.isTampered) h1 += `<div style="padding-left:16px;" class="c-hl">X-Requestly-Modified: <span class="c-str">"true"</span> <span style="font-size:10px;">← INJECTED</span></div>`;
+            h1 += `<br><div><span class="c-key">Payload:</span></div>`;
+            h1 += `<div style="padding-left:16px;">amount: <span class="c-num">${tx.amt}</span></div>`;
+            $(`sb1`).innerHTML = h1;
+            await wait(delay);
+
+            // Step 2
+            $(`s2`).classList.add('active');
+            if(tx.isTampered) $(`s2`).classList.add('tampered');
+            let h2 = `<div>// Express Middleware Execution</div>`;
+            h2 += `<div>✔ authenticateJWT() <span style="color:var(--text-muted)">-> PASS</span></div>`;
+            h2 += `<div>✔ rateLimiter() <span style="color:var(--text-muted)">-> 28/30 remaining</span></div>`;
+            if(tx.isTampered) {
+                h2 += `<div>❌ tamperDetection() <span class="c-hl">-> FAILS: Header Present</span></div>`;
+                h2 += `<div style="color:var(--danger);font-weight:700;margin-top:8px;">req.tampered = TRUE</div>`;
+            } else {
+                h2 += `<div>✔ tamperDetection() <span style="color:var(--success)">-> PASS (clean payload)</span></div>`;
+            }
+            $(`sb2`).innerHTML = h2;
+            await wait(delay);
+
+            // Step 3
+            $(`s3`).classList.add('active');
+            let h3 = `<div>// POST http://fraud:8000/score</div>`;
+            h3 += `<div style="padding-left:16px">"risk_score": <span class="c-num">${tx.score}</span>,</div>`;
+            let lbl = tx.score >= 0.8 ? 'CRITICAL' : (tx.score >= 0.6 ? 'MEDIUM' : 'LOW');
+            h3 += `<div style="padding-left:16px">"label": <span class="c-str">"${lbl}"</span></div>`;
+            if(tx.isTampered) h3 += `<div style="padding-left:16px;" class="c-hl">"triggered_rules": ["TAMPER_DETECTED"]</div>`;
+            $(`sb3`).innerHTML = h3;
+            await wait(delay);
+
+            // Step 4
+            $(`s4`).classList.add('active');
+            if(tx.isTampered) $(`s4`).classList.add('tampered');
+            let h4 = `<div style="display:flex;align-items:center;gap:16px;margin-top:8px;">`;
+            if(tx.isTampered) {
+                h4 += `<div style="padding:12px;border:1px solid var(--surface-border);border-radius:8px;">req.tampered<br><b class="c-bool">true</b></div>`;
+                h4 += `<div>→</div>`;
+                h4 += `<div style="padding:12px;border:1px solid var(--danger);background:var(--danger-bg);color:var(--danger);border-radius:8px;font-weight:700;">402 FRAUD_FLAGGED <br><span style="font-size:11px;font-weight:400;">Blocked at Edge</span></div>`;
+            } else {
+                h4 += `<div style="padding:12px;border:1px solid var(--surface-border);border-radius:8px;">Score<br><b class="c-num">${tx.score}</b></div>`;
+                h4 += `<div>→</div>`;
+                h4 += `<div style="padding:12px;border:1px solid var(--success);background:var(--success-bg);color:var(--success);border-radius:8px;font-weight:700;">200 SUCCESS <br><span style="font-size:11px;font-weight:400;">Payment Allowed</span></div>`;
+            }
+            h4 += `</div>`;
+            $(`sb4`).innerHTML = h4;
+        }
+
+    </script>
+</body>
+</html>
