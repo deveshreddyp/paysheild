@@ -16,6 +16,10 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # If using Next.js 14 and react-leaflet we need SSR disabled but also good to have output standalone
+ARG NEXT_PUBLIC_GATEWAY_URL
+ENV NEXT_PUBLIC_GATEWAY_URL=$NEXT_PUBLIC_GATEWAY_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 RUN npm run build
 
 # Production image, copy all the files and run next
