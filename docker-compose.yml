@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  gateway:
+    build:
+      context: ./gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - FRAUD_ENGINE_URL=http://fraud:8000
+      - REDIS_URL=redis://redis:6379
+      - JWT_ROTATION_INTERVAL=900
+      - PORT=3000
+    depends_on:
+      redis:
+        condition: service_healthy
+      fraud:
+        condition: service_started
+    networks:
+      - payshield_net
+
+  fraud:
+    build:
+      context: ./fraud
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MODEL_BATCH_SIZE=10
+      - ISOLATION_CONTAMINATION=0.1
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - payshield_net
+
+  dashboard:
+    build:
+      context: ./dashboard
+    ports:
+      - "4000:4000"
+    environment:
+      - NEXT_PUBLIC_WS_URL=ws://localhost:3000/ws
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:3000
+    networks:
+      - payshield_net
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - payshield_net
+
+networks:
+  payshield_net:
+    driver: bridge

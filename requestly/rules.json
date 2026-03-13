@@ -1,0 +1,65 @@
+{
+  "fileType": "requestly_export",
+  "version": 1,
+  "data": {
+    "groups": [
+      {
+        "id": "payshield_tamper_group",
+        "name": "PayShield Tamper Demo",
+        "status": "Active",
+        "objectType": "group"
+      }
+    ],
+    "rules": [
+      {
+        "id": "payshield_inject_header",
+        "name": "Inject Tamper Marker",
+        "description": "Adds X-Requestly-Modified header to payment requests",
+        "ruleType": "Headers",
+        "status": "Active",
+        "groupId": "payshield_tamper_group",
+        "pairs": [
+          {
+            "modifications": {
+              "Request": [
+                {
+                  "header": "X-Requestly-Modified",
+                  "value": "true",
+                  "type": "Add"
+                }
+              ]
+            },
+            "source": {
+              "key": "Url",
+              "operator": "Contains",
+              "value": "localhost:3000/api/v1/payment/initiate"
+            }
+          }
+        ],
+        "objectType": "rule"
+      },
+      {
+        "id": "payshield_force_fraud",
+        "name": "Force CRITICAL Fraud Score",
+        "description": "Modifies request body to force high amount and suspicious card BIN",
+        "ruleType": "Request",
+        "status": "Active",
+        "groupId": "payshield_tamper_group",
+        "pairs": [
+          {
+            "request": {
+              "type": "static",
+              "value": "{\"amount\":1500000,\"currency\":\"INR\",\"card_bin\":\"400010\",\"device_fingerprint\":\"requestly_tamper\",\"merchant_id\":\"merch_demo\",\"geo\":{\"country\":\"IN\",\"ip\":\"1.1.1.1\"}}"
+            },
+            "source": {
+              "key": "Url",
+              "operator": "Contains",
+              "value": "localhost:3000/api/v1/payment/initiate"
+            }
+          }
+        ],
+        "objectType": "rule"
+      }
+    ]
+  }
+}

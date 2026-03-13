@@ -1,0 +1,276 @@
+{
+    "info": {
+        "name": "PayShield E2E Suite",
+        "description": "Comprehensive test suite for the PayShield Gateway & Fraud Engine",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "1. Authentication",
+            "item": [
+                {
+                    "name": "Get Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                                    "pm.test(\"Token is present\", function () { pm.expect(pm.response.json()).to.have.property('token'); });",
+                                    "pm.environment.set(\"jwt_token\", pm.response.json().token);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{BASE_URL}}/auth/token",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "token"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Check Identity Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{BASE_URL}}/auth/status",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "status"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Payment Flows",
+            "item": [
+                {
+                    "name": "Happy Path (Safe Txn)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.variables.set('req_id', 'happy-' + Date.now());"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                                    "pm.test(\"Status is SUCCESS\", function () { pm.expect(pm.response.json().status).to.eql(\"SUCCESS\"); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "{{req_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"INR\",\n  \"card_bin\": \"411111\",\n  \"device_fingerprint\": \"safe_device_01\",\n  \"merchant_id\": \"safe_merchant_A\",\n  \"geo\": {\n    \"country\": \"IN\",\n    \"ip\": \"122.161.45.10\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/v1/payment/initiate",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payment",
+                                "initiate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Fraud Path (Critical Score)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "pm.variables.set('req_id', 'fraud-' + Date.now());"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 402\", function () { pm.response.to.have.status(402); });",
+                                    "pm.test(\"Status is FRAUD_FLAGGED\", function () { pm.expect(pm.response.json().status).to.eql(\"FRAUD_FLAGGED\"); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "{{req_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 950000,\n  \"currency\": \"INR\",\n  \"card_bin\": \"400010\",\n  \"device_fingerprint\": \"new_device_X\",\n  \"merchant_id\": \"shady_merchant_B\",\n  \"geo\": {\n    \"country\": \"US\",\n    \"ip\": \"104.28.12.50\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/v1/payment/initiate",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payment",
+                                "initiate"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Edge Cases",
+            "item": [
+                {
+                    "name": "Idempotency Replay",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });",
+                                    "pm.test(\"Has Replay Header\", function () { pm.response.to.have.header(\"X-Idempotency-Replay\"); });"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            },
+                            {
+                                "key": "X-Idempotency-Key",
+                                "value": "{{req_id}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 5000,\n  \"currency\": \"INR\",\n  \"card_bin\": \"411111\",\n  \"device_fingerprint\": \"safe_device_01\",\n  \"merchant_id\": \"safe_merchant_A\",\n  \"geo\": {\n    \"country\": \"IN\",\n    \"ip\": \"122.161.45.10\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/v1/payment/initiate",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payment",
+                                "initiate"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Missing Required Headers",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"amount\": 5000\n}"
+                        },
+                        "url": {
+                            "raw": "{{BASE_URL}}/api/v1/payment/initiate",
+                            "host": [
+                                "{{BASE_URL}}"
+                            ],
+                            "path": [
+                                "api",
+                                "v1",
+                                "payment",
+                                "initiate"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "BASE_URL",
+            "value": "http://localhost:3000",
+            "type": "string"
+        }
+    ]
+}
