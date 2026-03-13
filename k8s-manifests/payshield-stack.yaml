@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payshield
+
+---
+# 1. Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: payshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: payshield
+spec:
+  ports:
+  - port: 6379
+  selector:
+    app: redis
+
+---
+# 2. Fraud Engine (Python)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fraud-engine
+  namespace: payshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fraud-engine
+  template:
+    metadata:
+      labels:
+        app: fraud-engine
+    spec:
+      containers:
+      - name: fraud-engine
+        image: yourdockerhub/payshield-fraud:latest # TODO: Replace with your actual pushed image!
+        ports:
+        - containerPort: 8000
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: MODEL_BATCH_SIZE
+          value: "10"
+        - name: ISOLATION_CONTAMINATION
+          value: "0.1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fraud-engine
+  namespace: payshield
+spec:
+  ports:
+  - port: 8000
+  selector:
+    app: fraud-engine
+
+---
+# 3. API Gateway (Node.js)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: payshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+      - name: gateway
+        image: yourdockerhub/payshield-gateway:latest # TODO: Replace with your actual pushed image!
+        ports:
+        - containerPort: 3000
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: FRAUD_ENGINE_URL
+          value: "http://fraud-engine:8000"
+        - name: PORT
+          value: "3000"
+        - name: JWT_ROTATION_INTERVAL
+          value: "900"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: payshield
+spec:
+  type: LoadBalancer # Exposes the Gateway to the internet (or NodePort for local k8s)
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: gateway
+
+---
+# 4. Dashboard (Next.js)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: payshield
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: yourdockerhub/payshield-dashboard:latest # TODO: Replace with your actual pushed image!
+        ports:
+        - containerPort: 4000
+        env:
+        - name: NEXT_PUBLIC_GATEWAY_URL
+          # TODO: This MUST be the public internet URL or IP of the gateway Service created above!
+          value: "http://<GATEWAY_EXTERNAL_IP>:3000" 
+        - name: NEXT_PUBLIC_WS_URL
+          # TODO: This MUST be the public internet URL or IP of the gateway Service created above!
+          value: "ws://<GATEWAY_EXTERNAL_IP>:3000/ws" 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: payshield
+spec:
+  type: LoadBalancer # Exposes the Dashboard to the internet
+  ports:
+  - port: 80
+    targetPort: 4000
+  selector:
+    app: dashboard
