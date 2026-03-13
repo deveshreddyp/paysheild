@@ -231,6 +231,12 @@ node src/scripts/seedDemo.js
 * https://payshield-dashboard.onrender.com/
 
 ---
+---
+
+## 🔮 Demo link
+
+* https://drive.google.com/file/d/1gOl_pqGhhH8_0XgCW7FzAeVuAONGDXX-/view?usp=sharing
+
 ## Team Orbit
 - M Tanusree Reddy 
 - Nihal DR
