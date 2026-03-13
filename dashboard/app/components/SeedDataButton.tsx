@@ -10,7 +10,7 @@ export function SeedDataButton() {
         setIsLoading(true);
         try {
             const apiBase = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3000';
-            const response = await fetch(`${apiBase}/api/v1/payment/seed`, {
+            const response = await fetch(`${apiBase}/api/v1/seed`, {
                 method: 'POST',
             });
             

@@ -50,6 +50,30 @@ app.get('/health', (req, res) => {
 // 3. Swagger API Docs
 setupSwagger(app);
 
+// 3.5 Public Seed Endpoint (For Hackathon Demo)
+app.post('/api/v1/seed', (req, res) => {
+    const { exec } = require('child_process');
+    const path = require('path');
+    const scriptPath = path.join(__dirname, './scripts/seedDemo.js');
+    const gatewayPort = process.env.PORT || 3000;
+    
+    // Ensure the script hits the container's internal localhost
+    const env = { ...process.env, GATEWAY_URL: `http://127.0.0.1:${gatewayPort}` };
+
+    // Run the script in the background
+    exec(`node ${scriptPath}`, { env }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`[Seed Route] execution error: ${error}`);
+            console.error(`[Seed Route] stderr: ${stderr}`);
+            return;
+        }
+        console.log(`[Seed Route] stdout: ${stdout}`);
+    });
+    
+    // Respond immediately so UI doesn't hang
+    res.status(202).json({ message: 'Seeding demo data started in background. Check live feed.' });
+});
+
 // 4. Mount Routes
 app.use('/auth', authRouter);
 

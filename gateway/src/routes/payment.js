@@ -4,34 +4,6 @@ const redisClient = require('../services/redisClient');
 const { evaluateFraud } = require('../services/fraudClient');
 
 const router = express.Router();
-const { exec } = require('child_process');
-
-// Trigger Seed Script from the Dashboard Button
-router.post('/seed', (req, res, next) => {
-    try {
-        const path = require('path');
-        const scriptPath = path.join(__dirname, '../scripts/seedDemo.js');
-        const gatewayPort = process.env.PORT || 3000;
-        
-        // Ensure the script hits the container's internal localhost
-        const env = { ...process.env, GATEWAY_URL: `http://127.0.0.1:${gatewayPort}` };
-
-        // Run the script in the background
-        exec(`node ${scriptPath}`, { env }, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`[Seed Route] execution error: ${error}`);
-                console.error(`[Seed Route] stderr: ${stderr}`);
-                return;
-            }
-            console.log(`[Seed Route] stdout: ${stdout}`);
-        });
-        
-        // Respond immediately so UI doesn't hang
-        res.status(202).json({ message: 'Seeding demo data started in background. Check live feed.' });
-    } catch (err) {
-        next(err);
-    }
-});
 
 router.post('/initiate', async (req, res, next) => {
     try {
