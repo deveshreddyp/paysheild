@@ -224,13 +224,11 @@ node src/scripts/seedDemo.js
 * **Automated Webhooks:** Instant Slack/PagerDuty alerts for critical threshold breaches.
 
 ---
----
 
 ## 🔮 Deployed link
 
 * https://payshield-dashboard.onrender.com/
 
----
 ---
 
 ## 🔮 Demo link
