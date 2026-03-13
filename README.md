@@ -107,6 +107,18 @@ node src/scripts/seedDemo.js
 * **Automated Webhooks:** Instant Slack/PagerDuty alerts for critical threshold breaches.
 
 ---
+---
+
+## 🔮 Deployed link
+
+* https://payshield-dashboard.onrender.com/
+
+---
+## Team
+- M Tanusree Reddy 
+- Nihal DR
+- P Devesh Reddy
+
 
 <div align="center">
   <b>Built with ❤️ by Team PayShield for Hack-Nocturne 2.O</b><br>
