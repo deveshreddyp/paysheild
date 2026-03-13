@@ -1,0 +1,62 @@
+services:
+  # 1. Database (Redis)
+  - type: redis
+    name: payshield-redis
+    ipAllowList: [] # empty means all IPv4/IPv6 allowed
+    plan: free
+
+  # 2. Fraud Engine (Python ML)
+  - type: web
+    name: payshield-fraud-engine
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    plan: free
+    rootDir: fraud
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: payshield-redis
+          property: connectionString
+      - key: MODEL_BATCH_SIZE
+        value: "10"
+      - key: ISOLATION_CONTAMINATION
+        value: "0.1"
+      - key: PORT
+        value: "8000"
+
+  # 3. API Gateway (Node.js)
+  - type: web
+    name: payshield-gateway
+    env: node
+    buildCommand: npm install
+    startCommand: node src/index.js
+    plan: free
+    rootDir: gateway
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: payshield-redis
+          property: connectionString
+      - key: FRAUD_ENGINE_URL
+        value: "https://payshield-fraud-engine.onrender.com"
+      - key: JWT_ROTATION_INTERVAL
+        value: "900"
+      - key: PORT
+        value: "3000"
+
+  # 4. Next.js Dashboard
+  - type: web
+    name: payshield-dashboard
+    env: docker # Using Dockerfile for Next.js standalone setup to simplify Render build
+    plan: free
+    rootDir: dashboard
+    envVars:
+      - key: NEXT_PUBLIC_GATEWAY_URL
+        value: "https://payshield-gateway.onrender.com"
+      - key: NEXT_PUBLIC_WS_URL
+        value: "wss://payshield-gateway.onrender.com/ws"
+      - key: PORT
+        value: "4000"
