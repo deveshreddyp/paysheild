@@ -32,7 +32,16 @@ setupLogScrubbing(morgan);
 
 // 1. Security & Core Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://payshield-dashboard-dqdx.onrender.com',
+    'http://localhost:4000',
+    'http://localhost:3000',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Idempotency-Key', 'X-Request-ID'],
+}));
 app.use(addRequestId);
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms - reqId: :req[X-Request-ID] headers: :scrubbed-headers'));
 app.use(express.json());

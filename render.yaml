@@ -57,8 +57,8 @@ services:
     rootDir: dashboard
     envVars:
       - key: NEXT_PUBLIC_GATEWAY_URL
-        value: "https://payshield-gateway.onrender.com"
+        value: "https://payshield-gateway-f8b8.onrender.com"
       - key: NEXT_PUBLIC_WS_URL
-        value: "wss://payshield-gateway.onrender.com/ws"
+        value: "wss://payshield-gateway-f8b8.onrender.com/ws"
       - key: PORT
         value: "4000"
